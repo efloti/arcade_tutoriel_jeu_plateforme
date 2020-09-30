@@ -12,7 +12,7 @@ TITRE = "Jeu de plateforme"
 
 # Constantes de mise à l'échelle pour nos sprites.
 ECHELLE_PERSONNAGE = 1
-ECHELLE_TUILE = 0.5
+ECHELLE_TUILE = .5
 
 VITESSE_PERSONNAGE = 5  # en pixel/frame (rafraîchissement de l'image)
 GRAVITE = 1
@@ -65,8 +65,6 @@ class MonJeu(arcade.Window):
         # Sprite: Image animée
         # SpriteList: Groupement d'images animées
         self.personnages = arcade.SpriteList()
-        self.pieces = arcade.SpriteList(use_spatial_hash=True)
-        self.plateformes = arcade.SpriteList(use_spatial_hash=True)
 
         # Sprite pour le personnage
         self.personnage = arcade.Sprite(  # chemin image, echelle
@@ -79,37 +77,22 @@ class MonJeu(arcade.Window):
         # l'ajouter à sa SpriteList
         self.personnages.append(self.personnage)
 
-        # Placer la pelouse sur une ligne horizontale
-        for x in range(0, 1250, 64):
-            bloc_pelouse = arcade.Sprite(
-                ":resources:images/tiles/grassMid.png",
-                ECHELLE_TUILE
-            )
-            bloc_pelouse.center_x = x
-            bloc_pelouse.center_y = 32
-            # ajouter chaque bloc à la spriteList des tuiles
-            self.plateformes.append(bloc_pelouse)
-
-        # Placer des obstacles
-        liste_coordonnees = [
-            (512, 96),
-            (256, 96),
-            (768, 96),
-        ]
-        for coord in liste_coordonnees:
-            obstacle = arcade.Sprite(
-                ":resources:images/tiles/boxCrate_double.png",
-                ECHELLE_TUILE
-            )
-            obstacle.position = coord
-            self.plateformes.append(obstacle)
-
-        # Placer des pièces
-        for x in range(128, 1250, 256):
-            piece = arcade.Sprite(":resources:images/items/coinGold.png", ECHELLE_TUILE)
-            piece.center_x = x
-            piece.center_y = 96
-            self.pieces.append(piece)
+        # Utilisation d'une carte (tilemap)
+        carte = arcade.read_tmx(":resources:tmx_maps/map.tmx")
+        # extraction du calque (layer) des pièces
+        self.pieces = arcade.process_layer(
+            carte,
+            "Coins",
+            scaling=ECHELLE_TUILE,  # options
+            use_spatial_hash=True
+        )
+        # extraction du calque (layer) des obstacles
+        self.plateformes = arcade.process_layer(
+            carte,
+            "Platforms",
+            scaling=ECHELLE_TUILE,  # options
+            use_spatial_hash=True
+        )
 
         # Configurer le «moteur physique»
         # attention: on passe de `PhysicsEngineSimple` à `PhysicsEnginePlatformer`
