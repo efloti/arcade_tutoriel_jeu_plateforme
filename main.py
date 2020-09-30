@@ -40,6 +40,8 @@ class MonJeu(arcade.Window):
         # ils sont initialisés dans `setup()`
         self.pieces = None
         self.plateformes = None
+        self.arriere_plan = None
+        self.pas_touches = None
 
         self.personnages = None
         self.personnage = None
@@ -55,12 +57,12 @@ class MonJeu(arcade.Window):
         self.son_collecte_piece = arcade.load_sound(":resources:sounds/coin1.wav")
         self.son_saut = arcade.load_sound(":resources:sounds/jump1.wav")
         self.son_niveau = arcade.load_sound(":resources:sounds/upgrade1.wav")
+        self.son_perdu = arcade.load_sound(":resources:sounds/lose1.wav")
         # En cas de pbs, le faire comme suit (et commenter les lignes précédentes)
         # self.son_collecte_piece = pyglet.media.load('sounds/coin1.wav', streaming=False)
         # self.son_saut = pyglet.media.load('sounds/jump1.wav', streaming=False)
         # self.son_niveau = pyglet.media.load("sounds/upgrade1.wav", streaming=False)
-
-        arcade.set_background_color(arcade.csscolor.CORNFLOWER_BLUE)
+        # self.son_perdu = pyglet.media.load("sounds/lose1.wav", streaming=False)
 
     def setup(self, niveau=1):
         """ Configurer le jeu ici. Appeler cette fonction pour (re)démarrer le jeu."""
@@ -96,8 +98,20 @@ class MonJeu(arcade.Window):
             scaling=ECHELLE_TUILE,  # options
             use_spatial_hash=True
         )
-
+        self.arriere_plan = arcade.process_layer(
+            carte,
+            "Background",
+            ECHELLE_TUILE
+        )
+        self.pas_touches = arcade.process_layer(
+            carte,
+            "Don't Touch",
+            ECHELLE_TUILE
+        )
         self.x_max_carte = carte.map_size.width * carte.tile_size.width * ECHELLE_TUILE
+
+        if carte.background_color:
+            arcade.set_background_color(carte.background_color)
 
         # Configurer le «moteur physique»
         # attention: on passe de `PhysicsEngineSimple` à `PhysicsEnginePlatformer`
@@ -120,8 +134,10 @@ class MonJeu(arcade.Window):
 
         # afficher les différentes spriteList
         self.plateformes.draw()
-        self.personnages.draw()
+        self.pas_touches.draw()
         self.pieces.draw()
+        self.arriere_plan.draw()
+        self.personnages.draw()
 
         # affichage du score
         score_txt = f"Score: {self.score}"
@@ -230,7 +246,13 @@ class MonJeu(arcade.Window):
             # self.son_collecte_piece.play()
             self.score += 1
 
-        # En bout de carte, on change de niveau
+        # «mort»...
+        if arcade.check_for_collision_with_list(self.personnage, self.pas_touches):
+            arcade.play_sound(self.son_perdu)
+            # si utilisation de pyglet pour le son
+            # self.son_perdu.play()
+            self.setup(1) # mort = retour au premier niveau
+
         if self.personnage.center_x > self.x_max_carte:
             niveau = 2 if self.niveau == 1 else 1  # ou  niveau = ((self.niveau - 1) % 2) + 1
             arcade.play_sound(self.son_niveau)
