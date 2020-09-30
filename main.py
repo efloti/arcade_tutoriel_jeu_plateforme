@@ -41,7 +41,7 @@ class MonJeu(arcade.Window):
         self.pieces = None
         self.plateformes = None
         self.arriere_plan = None
-        self.pas_touches = None
+        self.echelles = None
 
         self.personnages = None
         self.personnage = None
@@ -84,7 +84,7 @@ class MonJeu(arcade.Window):
         self.personnages.append(self.personnage)
 
         # Utilisation d'une carte (tilemap)
-        carte = arcade.read_tmx(f":resources:tmx_maps/map2_level_{self.niveau}.tmx")
+        carte = arcade.read_tmx(":resources:tmx_maps/map_with_ladders.tmx")
         # extraction des calques (ouvrir le fichier tmx avec Tiled pour en prendre connaissance)
         self.pieces = arcade.process_layer(
             carte,
@@ -101,13 +101,24 @@ class MonJeu(arcade.Window):
         self.arriere_plan = arcade.process_layer(
             carte,
             "Background",
-            ECHELLE_TUILE
+            scaling=ECHELLE_TUILE,
+            use_spatial_hash=True
         )
-        self.pas_touches = arcade.process_layer(
+        self.echelles = arcade.process_layer(
             carte,
-            "Don't Touch",
-            ECHELLE_TUILE
+            "Ladders",
+            scaling=ECHELLE_TUILE,
+            use_spatial_hash=True
         )
+        plateformes_mobiles = arcade.process_layer(
+            carte,
+            "Moving Platforms",
+            scaling=ECHELLE_TUILE
+        )
+        # Ce sont des plateformes donc ...
+        for plateforme in plateformes_mobiles:
+            self.plateformes.append(plateforme)
+
         self.x_max_carte = carte.map_size.width * carte.tile_size.width * ECHELLE_TUILE
 
         if carte.background_color:
@@ -118,7 +129,8 @@ class MonJeu(arcade.Window):
         self.physics_engine = arcade.PhysicsEnginePlatformer(
             self.personnage,  # personnage
             self.plateformes,  # obstacles ou sols
-            GRAVITE  # force de la gravité
+            gravity_constant=GRAVITE,  # force de la gravité
+            ladders=self.echelles
         )
 
         self.xmin = 0
@@ -134,7 +146,7 @@ class MonJeu(arcade.Window):
 
         # afficher les différentes spriteList
         self.plateformes.draw()
-        self.pas_touches.draw()
+        self.echelles.draw()
         self.pieces.draw()
         self.arriere_plan.draw()
         self.personnages.draw()
@@ -162,7 +174,9 @@ class MonJeu(arcade.Window):
                 arcade.play_sound(self.son_saut)
                 # si utilisation de pyglet pour le son
                 # self.son_saut.play()
-        if key == arcade.key.DOWN:
+            if self.physics_engine.is_on_ladder():
+                self.personnage.change_y = VITESSE_PERSONNAGE
+        if key == arcade.key.DOWN and self.physics_engine.is_on_ladder():
             self.personnage.change_y = -VITESSE_PERSONNAGE
         if key == arcade.key.LEFT:
             self.personnage.change_x = -VITESSE_PERSONNAGE
@@ -190,6 +204,10 @@ class MonJeu(arcade.Window):
 
         # gestion du mouvement du joueur via le `physics_engine`
         self.physics_engine.update()
+
+        # on «joue» les animations des calques qui en ont
+        self.pieces.update_animation()
+        self.arriere_plan.update_animation()
 
         # drapeau (flag en anglais) pour savoir s'il faut actuliser la fenêtre de vue
         vue_change = False
@@ -245,13 +263,6 @@ class MonJeu(arcade.Window):
             # si utilisation de pyglet
             # self.son_collecte_piece.play()
             self.score += 1
-
-        # «mort»...
-        if arcade.check_for_collision_with_list(self.personnage, self.pas_touches):
-            arcade.play_sound(self.son_perdu)
-            # si utilisation de pyglet pour le son
-            # self.son_perdu.play()
-            self.setup(1) # mort = retour au premier niveau
 
         if self.personnage.center_x > self.x_max_carte:
             niveau = 2 if self.niveau == 1 else 1  # ou  niveau = ((self.niveau - 1) % 2) + 1
