@@ -6,7 +6,7 @@ import arcade
 # En cas de pb de son (voir notes plus bas)
 # import pyglet
 
-# Constantes
+# Constantes globales
 LARGEUR_ECRAN = 1000
 HAUTEUR_ECRAN = 650
 TITRE = "Jeu de plateforme"
@@ -15,14 +15,75 @@ TITRE = "Jeu de plateforme"
 ECHELLE_PERSONNAGE = 1
 ECHELLE_TUILE = 0.5
 
+# Animation du personnage
 VITESSE_PERSONNAGE = 5  # en pixel/frame (rafraîchissement de l'image)
-GRAVITE = 1
+GRAVITE = .8
 VITESSE_SAUT_PERSONNAGE = 20
+DROITE = 0  # va servir d'index «nommé»
+GAUCHE = 1
 
+# Marges pour la fenêtre de vue
 MARGE_GAUCHE_VUE = 250
 MARGE_DROITE_VUE = 250
 MARGE_BASSE_VUE = 50
 MARGE_HAUTE_VUE = 100
+
+PERSONNAGE_BASE_IMGS = f":resources:images/animated_characters/female_adventurer/femaleAdventurer_"
+
+
+class Personnage(arcade.Sprite):
+    def __init__(self):
+        super().__init__(scale=ECHELLE_PERSONNAGE)
+
+        # Chargement des différentes textures
+        self.repos_texture = arcade.load_texture(
+            f"{PERSONNAGE_BASE_IMGS}idle.png"
+        )
+
+        self.saut_textures = (
+            arcade.load_texture(
+                f"{PERSONNAGE_BASE_IMGS}jump.png"
+            ),
+            arcade.load_texture(
+                f"{PERSONNAGE_BASE_IMGS}jump.png",
+                flipped_horizontally=True  # pour la gauche
+            )
+        )
+
+        self.chute_textures = (
+            arcade.load_texture(
+                f"{PERSONNAGE_BASE_IMGS}fall.png"
+            ),
+            arcade.load_texture(
+                f"{PERSONNAGE_BASE_IMGS}fall.png",
+                flipped_horizontally=True  # pour la gauche
+            )
+        )
+
+        # définition des attributs complémentaires
+        self.direction = DROITE
+
+        # attribut de sprite à renseigner
+        self.texture = self.repos_texture
+        self.scale = ECHELLE_PERSONNAGE
+        # calcul de la hit_box (est fait automatiquement lorsqu'on utilise Sprite(<img>, <echelle>))
+        self.set_hit_box(self.texture.hit_box_points)
+
+    def update_animation(self, delta_time):
+
+        # Changement de direction?
+        if self.change_x < 0 and self.direction == DROITE:
+            self.direction = GAUCHE
+        elif self.change_x > 0 and self.direction == GAUCHE:
+            self.direction = DROITE
+
+        # Saut ou chute ou ...
+        if self.change_y > 0:  # saut
+            self.texture = self.saut_textures[self.direction]
+        elif self.change_y < 0:  # chute
+            self.texture = self.chute_textures[self.direction]
+        else:  # autre cas: repos
+            self.texture = self.repos_texture
 
 
 class MonJeu(arcade.Window):
@@ -35,6 +96,9 @@ class MonJeu(arcade.Window):
         # Initialise la fenêtre en appelant la méthode __init__ de la classe mère
         # `arcade.Window` (d'où l'utilisation de `super`())
         super().__init__(LARGEUR_ECRAN, HAUTEUR_ECRAN, TITRE)
+
+        # couleur de fond par défaut (voir setup)
+        arcade.set_background_color(arcade.csscolor.CORNFLOWER_BLUE)
 
         # déclaration des attributs de MonJeu
         # ils sont initialisés dans `setup()`
@@ -73,10 +137,7 @@ class MonJeu(arcade.Window):
         self.personnages = arcade.SpriteList()
 
         # Sprite pour le personnage
-        self.personnage = arcade.Sprite(  # chemin image, echelle
-            ":resources:images/animated_characters/female_adventurer/femaleAdventurer_idle.png",
-            ECHELLE_PERSONNAGE
-        )
+        self.personnage = Personnage()
         # positionner le personnage dans la fenêtre (pixel)
         self.personnage.center_x = 64
         self.personnage.center_y = 128
@@ -85,7 +146,9 @@ class MonJeu(arcade.Window):
 
         # Utilisation d'une carte (tilemap)
         carte = arcade.read_tmx(":resources:tmx_maps/map_with_ladders.tmx")
-        # extraction des calques (ouvrir le fichier tmx avec Tiled pour en prendre connaissance)
+        # extraction des calques
+        # ouvrir le fichier tmx avec Tiled pour en prendre connaissance ...
+        # (voir fichier joint «resources.zip»)
         self.pieces = arcade.process_layer(
             carte,
             "Coins",
@@ -149,7 +212,7 @@ class MonJeu(arcade.Window):
         self.echelles.draw()
         self.pieces.draw()
         self.arriere_plan.draw()
-        self.personnages.draw()
+        self.personnages.draw()  # à dessiner après l'arriere_plan (mais avant l'avant_plan s'il y en a un)
 
         # affichage du score
         score_txt = f"Score: {self.score}"
@@ -199,15 +262,16 @@ class MonJeu(arcade.Window):
     def on_update(self, delta_time):
         """ Appelée à chaque mise à jour de l'affichage. `delta_time` correspond au temps
          écoulé depuis son dernier appel.
-         Mettre la logique du jeu ici
+         Mettre la logique du jeu ici.
          """
 
         # gestion du mouvement du joueur via le `physics_engine`
         self.physics_engine.update()
 
-        # on «joue» les animations des calques qui en ont
-        self.pieces.update_animation()
-        self.arriere_plan.update_animation()
+        # on «joue» les animations des calques qui en ont:
+        self.pieces.update_animation(delta_time)  # drapeaux
+        self.arriere_plan.update_animation(delta_time)  # torches
+        self.personnage.update_animation(delta_time)  # personnage
 
         # drapeau (flag en anglais) pour savoir s'il faut actuliser la fenêtre de vue
         vue_change = False

@@ -391,7 +391,7 @@ Plutôt que de placer chaque Sprite «à la main» comme nous l'avons fait jusqu
 
 Voilà à quoi cela ressemble dans le logiciel libre [Tiled Map Editor](https://www.mapeditor.org/).
 
-![tilemap_decouverte.png](attachment:0172ff15-0abb-46b7-919e-b0e0faa65db4.png)
+![tilemap_decouverte.png](illustrations/tilemap_decouverte.png)
 
 On distingue **3 zones**: la **carte** elle-même, le **jeu de tuiles** (*tiles*) qui a servi à la «peindre» et les **calques** (*layers*) qui permettent de distinguer certains groupes de tuiles.
 
@@ -529,7 +529,7 @@ Enfin, le calque *Moving Platforms* est un «calque à objets». Un objet peut �
 - `boundary_top`: limite haute (en px) du mouvement
 - `change_y`: déplacement en y
 
-![calque_objets_animes.png](attachment:4255e5e6-814a-4460-91fa-b786c84fa027.png)
+![calque_objets_animes.png](illustrations/calque_objets_animes.png)
 
 Lorsque le calque est lu via `.process_layer()`, les sprites correspondant à ces objets récupèrent ces propriétés comme attribut et sont ainsi automatiquement animés - [doc](https://arcade.academy/arcade.html#arcade.Sprite). Il semble que le lorsque le sprite atteint l'une de ses limites, le signe de `change_y` est automatiquement modifié (mal documenté).
 
@@ -575,7 +575,7 @@ Tags *v0.12.1*, *v0.12.2*, *v0.12.3* et *v1.0*
 
 Notre personnage - «*femaleAdventurer_...*» - dispose de diverses images (ou textures) afin d'être animées. Voici une vue d'ensemble de ces **textures**:
 
-![personnage_poses.png](attachment:1bb246bc-9f4e-42f6-81e9-5d8f4a5ef367.png)
+![personnage_poses.png](illustrations/personnage_poses.png)
 
 Observez que les images vont «vers la droite», mais une simple **symétrie axiale** (axe verticale) nous permettra d'obtenir un mouvement vers la gauche.
 
