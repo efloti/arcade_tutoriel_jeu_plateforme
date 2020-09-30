@@ -30,6 +30,9 @@ MARGE_HAUTE_VUE = 100
 
 PERSONNAGE_BASE_IMGS = f":resources:images/animated_characters/female_adventurer/femaleAdventurer_"
 
+# Animation de la marche
+DT_MARCHE = 0.1  # secondes entre deux sprites successifs
+
 
 def charger_paire_texture(nomfich):
     return (
@@ -67,6 +70,7 @@ class Personnage(arcade.Sprite):
         # définition des attributs complémentaires
         self.direction = DROITE
         self.i_marche = 0
+        self.dt_marche = DT_MARCHE
 
         # attribut de sprite à renseigner
         self.texture = self.repos_texture
@@ -82,6 +86,11 @@ class Personnage(arcade.Sprite):
         elif self.change_x > 0 and self.direction == GAUCHE:
             self.direction = DROITE
 
+        # gestion du temps
+        self.dt_marche -= delta_time
+        if self.dt_marche <= 0:
+            self.dt_marche = DT_MARCHE
+
         # Saut ou chute ou marche
         if self.change_y > 0:         # saut
             self.texture = self.saut_textures[self.direction]
@@ -90,9 +99,10 @@ class Personnage(arcade.Sprite):
         elif abs(self.change_x) > 0:  # marche
             # début ou continuation?
             if self.texture == self.repos_texture:  # début!
+                self.dt_marche = DT_MARCHE
                 self.i_marche = 0
                 self.texture = self.marche_textures[0][self.direction]
-            else:  # continuation
+            elif self.dt_marche == DT_MARCHE:  # continuation
                 self.i_marche += 1
                 if self.i_marche == len(self.marche_textures):
                     self.i_marche = 0
