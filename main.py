@@ -13,6 +13,8 @@ ECHELLE_PERSONNAGE = 1
 ECHELLE_TUILE = 0.5
 
 VITESSE_PERSONNAGE = 5  # en pixel/frame (rafraîchissement de l'image)
+GRAVITE = 1
+VITESSE_SAUT_PERSONNAGE = 20
 
 MARGE_GAUCHE_VUE = 250
 MARGE_DROITE_VUE = 250
@@ -93,9 +95,11 @@ class MonJeu(arcade.Window):
             self.plateformes.append(obstacle)
 
         # Configurer le «moteur physique»
-        self.physics_engine = arcade.PhysicsEngineSimple(
+        # attention: on passe de `PhysicsEngineSimple` à `PhysicsEnginePlatformer`
+        self.physics_engine = arcade.PhysicsEnginePlatformer(
             self.personnage,  # personnage
-            self.plateformes  # obstacles ou sols
+            self.plateformes,  # obstacles ou sols
+            GRAVITE  # force de la gravité
         )
 
         self.xmin = 0
@@ -119,7 +123,9 @@ class MonJeu(arcade.Window):
 
         # On change le `.change_x(ou y)` selon la direction du mouvement (ou saut)
         if key == arcade.key.UP:
-            self.personnage.change_y = VITESSE_PERSONNAGE
+            # On vérifie que le joueur peut sauter
+            if self.physics_engine.can_jump():
+                self.personnage.change_y = VITESSE_SAUT_PERSONNAGE
         if key == arcade.key.DOWN:
             self.personnage.change_y = -VITESSE_PERSONNAGE
         if key == arcade.key.LEFT:
