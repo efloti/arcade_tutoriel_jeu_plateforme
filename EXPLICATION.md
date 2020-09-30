@@ -1,30 +1,31 @@
-# 5 - Un personnage qui «saute»
+# 6 - Du son et des objets à ramasser
 
-Tag *v0.5*
+Tag *v0.6*
 
-Pour réaliser cela facilement, on va changer le moteur `PhysicsEngineSimple` par le moteur `PhysicsEnginePlatformer` lequel prend en compte un paramètre pour simuler de la gravité. Reste alors à préciser le comportement lors de l'appui sur la touche ↑.
+Pour le son, on charge un fichier son avec `mon_son = arcade.load_sound(chemin_fichier_son)`, puis on déclenche avec `arcade.play_sound(mon_son)` au moment propice (par exemple lors d'un saut).
 
-On commence par définir de nouvelles constantes: `GRAVITE` et `VITESSE_SAUT_PERSONNAGE` puis:
+Pour les pièces, on procède de manière similaire aux tuiles (herbe et obstacles) pour les placer, les dessiner... Remarquez qu'on les groupe dans une `SpriteList` dédiée (ici nommée `self.pieces`).
+
+Reste à gérer dans `on_update` la collision entre le personnage et les pièces avec `arcade.check_for_collision_with_list(un_sprite, des_sprites)` qui renvoie une liste de sprite en collision avec `un_sprite`. 
+
+Dans les grandes lignes, cela donne:
 
 ```python
+    def __init__(...):
+        ...
+        self.son_collecte_piece = arcade.load_sound('sounds/coin1.wav')
+        ...
     ...
-    def setup(self):
+    def on_update(...):
         ...
-        self.physics_engine = arcade.PhysicsEnginePlatformer(
-            self.personnage,  # personnage
-            self.plateformes,  # obstacles ou sols
-            GRAVITE  # force de la gravité
-        )
-    ...
-    def on_key_press(self,...):
-        ...
-        if key == arcade.key.UP:
-            # On vérifie que le joueur peut sauter
-            if self.physics_engine.can_jump():
-                self.personnage.change_y = VITESSE_SAUT_PERSONNAGE
-        ...
+        # on récupère ... (noter que `pieces` n'a rien a voir avec `self.pieces`)
+        pieces = arcade.check_for_collision_with_list(self.personnage, self.pieces)
+        # ... et on agit
+        for piece in pieces:
+            piece.remove_from_sprite_lists()
+            arcade.play_sound(self.son_collecte_piece)
 ```
 
 ## Suite... 
 
-`git checkout v0.6`
+`git checkout v0.7`

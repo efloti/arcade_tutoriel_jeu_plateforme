@@ -2,6 +2,11 @@
 Jeu de plateforme
 """
 import arcade
+# En cas de pb de son (voir notes plus bas)
+# import pyglet
+
+# En cas de pb de son (voir notes plus bas)
+# import pyglet
 
 # Constantes
 LARGEUR_ECRAN = 1000
@@ -46,6 +51,14 @@ class MonJeu(arcade.Window):
         # gestion de la vue
         self.xmin = 0
         self.ymin = 0
+        self.score = 0
+
+        # Charger des fichier son
+        self.son_collecte_piece = arcade.load_sound(":resources:sounds/coin1.wav")
+        self.son_saut = arcade.load_sound(":resources:sounds/jump1.wav")
+        # En cas de pbs, le faire comme suit (et commenter les lignes précédentes)
+        # self.son_collecte_piece = pyglet.media.load('sounds/coin1.wav', streaming=False)
+        # self.son_saut = pyglet.media.load('sounds/jump1.wav', streaming=False)
 
         arcade.set_background_color(arcade.csscolor.CORNFLOWER_BLUE)
 
@@ -94,6 +107,13 @@ class MonJeu(arcade.Window):
             obstacle.position = coord
             self.plateformes.append(obstacle)
 
+        # Placer des pièces
+        for x in range(128, 1250, 256):
+            piece = arcade.Sprite(":resources:images/items/coinGold.png", ECHELLE_TUILE)
+            piece.center_x = x
+            piece.center_y = 96
+            self.pieces.append(piece)
+
         # Configurer le «moteur physique»
         # attention: on passe de `PhysicsEngineSimple` à `PhysicsEnginePlatformer`
         self.physics_engine = arcade.PhysicsEnginePlatformer(
@@ -104,6 +124,8 @@ class MonJeu(arcade.Window):
 
         self.xmin = 0
         self.ymin = 0
+
+        self.score = 0
 
     def on_draw(self):
         """ Affichage à l'écran """
@@ -126,6 +148,9 @@ class MonJeu(arcade.Window):
             # On vérifie que le joueur peut sauter
             if self.physics_engine.can_jump():
                 self.personnage.change_y = VITESSE_SAUT_PERSONNAGE
+                arcade.play_sound(self.son_saut)
+                # si utilisation de pyglet pour le son
+                # self.son_saut.play()
         if key == arcade.key.DOWN:
             self.personnage.change_y = -VITESSE_PERSONNAGE
         if key == arcade.key.LEFT:
@@ -195,6 +220,20 @@ class MonJeu(arcade.Window):
                 self.ymin,  # ymin
                 HAUTEUR_ECRAN + self.ymin  # ymax
             )
+
+        # collision avec les pièces
+        pieces_collectes = arcade.check_for_collision_with_list(
+            self.personnage,
+            self.pieces
+        )
+        # Bug: on peut gagner plus d'un point en prenant une piece
+        # sauter dessus! curieux...
+        for piece in pieces_collectes:
+            piece.remove_from_sprite_lists()
+            arcade.play_sound(self.son_collecte_piece)
+            # si utilisation de pyglet
+            # self.son_collecte_piece.play()
+            self.score += 1
 
 
 def main():
