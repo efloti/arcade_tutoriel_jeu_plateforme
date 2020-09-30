@@ -1,51 +1,73 @@
-# 2 - Planter le décors
+# 3 - Déplacement et interaction avec le décors
 
-Tag *v0.2*
+Tag *v0.3*
 
-On utilise des images qu'Arcade nous fournit par défaut (voir [là](https://arcade.academy/resources.html)). Elles vont nous servir à:
-1. Créer des **Sprites** individuels. Ce sont des images destinées à être animées:
-    - `mon_sprite = arcade.Sprite(chemin_img, echelle, ...)` puis
-    - on le positionne sur l'écran: `mon_sprite.center_x = x` (et pareil pour y)
+## Déplacement du personnage
 
+**Dans** la classe `MonJeu`, On ajoute les fonctions:
+- `on_key_press(self, key, ...)`
+- `on_key_release(self, key, ...)`.
 
-2. Grouper ces Sprites dans des listes adaptée `SpriteList`: 
-    - `grp_sprites = arcade.SpriteList(options)` puis
-    - `grp_sprites.append(<un sprite>)`,
+Ces fonctions seront appelées *automatiquement* dès que l'utilisateur **enfonce** \[*press*\] ou **relâche** \[*release*\] une touche du clavier.
 
+Par exemple, si l'utilisateur enfonce la flèche ↑ du clavier, alors la variable `key` prendra la valeur ... `arcade.key.UP`.
 
-3. Dessiner ces sprites à l'écran: `grp_sprites.draw()` (dans `on_draw`)
+Si cela se produit, on veut déplacer notre personnage vers le haut: `self.personnage.center_y += <valeur>` **sauf si** ça lui fait traverser le décors!!!
 
-Voici des extraits de code pertinent pour le décors (formé de «tuiles» \[*tiles*\]):
+## Interaction avec le décors
+
+Comme il n'est pas du tout évident de gérer à la main le «décors» et le «**sauf si**» précédent, on utilise un gestionnaire spécialisé appelé `PhysicsEngineSimple` qui va s'occuper de ces choses pour nous.
+
+Cela se passe en trois temps:
+
+1. créer ce gestionnaire et le placer dans un attribut de la fenêtre courante: 
+
+   `self.physics_engine = arcade.PhysicsEngineSimple(<sprite personnage>, <sprites du decors>)`
+
+2. créer une fonction `on_update(self, delta_time)` dans la classe `MonJeu`: elle sera appelée automatiquement à intervalle régulier
+
+3. appeler, depuis la fonction précédente, la méthode `update` de `physics_engine`.
+
+Voici les portions de code pertinentes:
+
 ```python
     def __init__(self):
         ...
-        self.plateformes = None # déclaration de l'attribut «tuiles» pour la fenêtre courante
+        self.physics_engine = None
         ...
-    
     def setup(self):
         ...
-        self.tuiles = arcade.SpriteList(use_spatial_hash=True)
+        self.physics_engine = arcade.PhysicsEngineSimple(
+            self.personnage,  # personnage
+            self.plateformes  # obstacles ou sols
+        )
         ...
-        for x in ...:
-            bloc_pelouse = arcade.Sprite(
-                ":resources:images/tiles/grassMid.png", # chemin
-                ECHELLE_TUILE # constante d'échelle
-            )
-            # positionnement
-            bloc_pelouse.center_x = x
-            bloc_pelouse.center_y = 32 # fixe ici
-            # ajouter chaque bloc à la spriteList des tuiles (attribut de la fenêtre courante)
-            self.plateformes.append(bloc_pelouse)
+    def on_update(self, delta_time): # nous détaillerons delta_time plus tard
         ...
-    
-    def on_draw(self):
-        ...
-        self.plateformes.draw()vers
+        self.physics_engine.update()
         ...
 ```
 
-*Note*: l'argument optionnel `use_spatial_hash=True` de la fonction `SpriteList` est utilisé lorsque les sprites ne seront pas animés (décors); cela permet d'optimiser leur affichage.
+## Retour au déplacement du personnage
+
+Grâce au «physics_engine», nous pouvons gérer le clavier sans nous préoccuper des obstacles.
+
+Mais plutôt que de modifier le `.center_y` de notre sprite, nous modifions son `.change_y`. Cela donne:
+
+```python
+    def on_key_press(self, key, modifiers): # ne pas se préoccuper de modifiers...
+        ...
+        if key == arcade.key.UP:
+            self.personnage.change_y = VITESSE_PERSONNAGE # constante à définir en début de fichier
+        if key == arcade.key.DOWN:
+            self.personnage.change_y = -VITESSE_PERSONNAGE
+        ...
+    def on_key_release(self, key, modifiers):
+        if key == arcade.key.UP:
+            self.personnage.change_y = 0    
+        ...
+```
 
 ## Suite... 
 
-`git checkout v0.3`
+`git checkout v0.4`

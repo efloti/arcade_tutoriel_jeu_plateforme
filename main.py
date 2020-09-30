@@ -6,11 +6,13 @@ import arcade
 # Constantes
 LARGEUR_ECRAN = 1000
 HAUTEUR_ECRAN = 650
-TITRE = "tutoriel jeu de plateforme"
+TITRE = "Jeu de plateforme"
 
 # Constantes de mise à l'échelle pour nos sprites.
 ECHELLE_PERSONNAGE = 1
 ECHELLE_TUILE = 0.5
+
+VITESSE_PERSONNAGE = 5  # en pixel/frame (rafraîchissement de l'image)
 
 
 class MonJeu(arcade.Window):
@@ -33,8 +35,7 @@ class MonJeu(arcade.Window):
         self.plateformes = None
         self.personnages = None
         self.personnage = None
-
-        arcade.set_background_color(arcade.csscolor.CORNFLOWER_BLUE)
+        self.physics_engine = None
 
     def setup(self):
         """ Configurer le jeu ici. Appeler cette fonction pour (re)démarrer le jeu."""
@@ -81,6 +82,12 @@ class MonJeu(arcade.Window):
             obstacle.position = coord
             self.plateformes.append(obstacle)
 
+        # Configurer le «moteur physique»
+        self.physics_engine = arcade.PhysicsEngineSimple(
+            self.personnage,  # personnage
+            self.plateformes  # obstacles ou sols
+        )
+
     def on_draw(self):
         """ Affichage à l'écran """
 
@@ -91,6 +98,43 @@ class MonJeu(arcade.Window):
         self.plateformes.draw()
         self.pieces.draw()
         self.personnages.draw()
+
+    def on_key_press(self, key, modifiers):
+        """ Automatiquement appelée lorsque l'utilisateur enfonce une touche
+        arcade.key contient des constantes qui correspondent à chaque touche
+        """
+
+        # On change le `.change_x(ou y)` selon la direction du mouvement
+        if key == arcade.key.UP:
+            self.personnage.change_y = VITESSE_PERSONNAGE
+        if key == arcade.key.DOWN:
+            self.personnage.change_y = -VITESSE_PERSONNAGE
+        if key == arcade.key.LEFT:
+            self.personnage.change_x = -VITESSE_PERSONNAGE
+        if key == arcade.key.RIGHT:
+            self.personnage.change_x = VITESSE_PERSONNAGE
+
+    def on_key_release(self, key, modifiers):
+        """ Automatiquement appelée lorsque l'utilisateur relâche une touche"""
+
+        # On stoppe le mouvement initié par un `on_key_press`
+        if key == arcade.key.UP:
+            self.personnage.change_y = 0
+        if key == arcade.key.DOWN:
+            self.personnage.change_y = 0
+        if key == arcade.key.LEFT:
+            self.personnage.change_x = 0
+        if key == arcade.key.RIGHT:
+            self.personnage.change_x = 0
+
+    def on_update(self, delta_time):
+        """ Appelée à chaque mise à jour de l'affichage. `delta_time` correspond au temps
+         écoulé depuis son dernier appel.
+         Mettre la logique du jeu ici
+         """
+
+        # gestion du mouvement du joueur via le `physics_engine`
+        self.physics_engine.update()
 
 
 def main():
