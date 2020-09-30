@@ -31,6 +31,16 @@ MARGE_HAUTE_VUE = 100
 PERSONNAGE_BASE_IMGS = f":resources:images/animated_characters/female_adventurer/femaleAdventurer_"
 
 
+def charger_paire_texture(nomfich):
+    return (
+        arcade.load_texture(nomfich),
+        arcade.load_texture(
+            nomfich,
+            flipped_horizontally=True
+        )
+    )
+
+
 class Personnage(arcade.Sprite):
     def __init__(self):
         super().__init__(scale=ECHELLE_PERSONNAGE)
@@ -40,28 +50,23 @@ class Personnage(arcade.Sprite):
             f"{PERSONNAGE_BASE_IMGS}idle.png"
         )
 
-        self.saut_textures = (
-            arcade.load_texture(
-                f"{PERSONNAGE_BASE_IMGS}jump.png"
-            ),
-            arcade.load_texture(
-                f"{PERSONNAGE_BASE_IMGS}jump.png",
-                flipped_horizontally=True  # pour la gauche
-            )
+        self.saut_textures = charger_paire_texture(
+            f"{PERSONNAGE_BASE_IMGS}jump.png"
         )
 
-        self.chute_textures = (
-            arcade.load_texture(
-                f"{PERSONNAGE_BASE_IMGS}fall.png"
-            ),
-            arcade.load_texture(
-                f"{PERSONNAGE_BASE_IMGS}fall.png",
-                flipped_horizontally=True  # pour la gauche
-            )
+        self.chute_textures = charger_paire_texture(
+            f"{PERSONNAGE_BASE_IMGS}fall.png"
         )
+
+        # tableau des 7 (paires) de textures pour la marche
+        self.marche_textures = [  # liste en compréhension ... (rappel 1ère)
+            charger_paire_texture(f"{PERSONNAGE_BASE_IMGS}walk{i}.png")
+            for i in range(8)
+        ]
 
         # définition des attributs complémentaires
         self.direction = DROITE
+        self.i_marche = 0
 
         # attribut de sprite à renseigner
         self.texture = self.repos_texture
@@ -77,12 +82,22 @@ class Personnage(arcade.Sprite):
         elif self.change_x > 0 and self.direction == GAUCHE:
             self.direction = DROITE
 
-        # Saut ou chute ou ...
-        if self.change_y > 0:  # saut
+        # Saut ou chute ou marche
+        if self.change_y > 0:         # saut
             self.texture = self.saut_textures[self.direction]
-        elif self.change_y < 0:  # chute
+        elif self.change_y < 0:       # chute
             self.texture = self.chute_textures[self.direction]
-        else:  # autre cas: repos
+        elif abs(self.change_x) > 0:  # marche
+            # début ou continuation?
+            if self.texture == self.repos_texture:  # début!
+                self.i_marche = 0
+                self.texture = self.marche_textures[0][self.direction]
+            else:  # continuation
+                self.i_marche += 1
+                if self.i_marche == len(self.marche_textures):
+                    self.i_marche = 0
+                self.texture = self.marche_textures[self.i_marche][self.direction]
+        else:                          # repos
             self.texture = self.repos_texture
 
 
@@ -198,8 +213,6 @@ class MonJeu(arcade.Window):
 
         self.xmin = 0
         self.ymin = 0
-
-        self.score = 0
 
     def on_draw(self):
         """ Affichage à l'écran """
