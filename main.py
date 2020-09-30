@@ -14,6 +14,11 @@ ECHELLE_TUILE = 0.5
 
 VITESSE_PERSONNAGE = 5  # en pixel/frame (rafraîchissement de l'image)
 
+MARGE_GAUCHE_VUE = 250
+MARGE_DROITE_VUE = 250
+MARGE_BASSE_VUE = 50
+MARGE_HAUTE_VUE = 100
+
 
 class MonJeu(arcade.Window):
     """
@@ -36,6 +41,11 @@ class MonJeu(arcade.Window):
         self.personnages = None
         self.personnage = None
         self.physics_engine = None
+        # gestion de la vue
+        self.xmin = 0
+        self.ymin = 0
+
+        arcade.set_background_color(arcade.csscolor.CORNFLOWER_BLUE)
 
     def setup(self):
         """ Configurer le jeu ici. Appeler cette fonction pour (re)démarrer le jeu."""
@@ -88,6 +98,9 @@ class MonJeu(arcade.Window):
             self.plateformes  # obstacles ou sols
         )
 
+        self.xmin = 0
+        self.ymin = 0
+
     def on_draw(self):
         """ Affichage à l'écran """
 
@@ -104,7 +117,7 @@ class MonJeu(arcade.Window):
         arcade.key contient des constantes qui correspondent à chaque touche
         """
 
-        # On change le `.change_x(ou y)` selon la direction du mouvement
+        # On change le `.change_x(ou y)` selon la direction du mouvement (ou saut)
         if key == arcade.key.UP:
             self.personnage.change_y = VITESSE_PERSONNAGE
         if key == arcade.key.DOWN:
@@ -135,6 +148,47 @@ class MonJeu(arcade.Window):
 
         # gestion du mouvement du joueur via le `physics_engine`
         self.physics_engine.update()
+
+        # drapeau (flag en anglais) pour savoir s'il faut actuliser la fenêtre de vue
+        vue_change = False
+
+        # axe des x: on vérifie si le x du bord gauche du sprite (`left`)
+        # est inférieur à celui du x du bord de la vue courante (`self.vue_gauche`)
+        # augmentée de la marge (entre le personnage et le bord gauche de la fenêtre)
+        if self.personnage.left < self.xmin + MARGE_GAUCHE_VUE:
+            # left == vg + marge donc vg = left - marge
+            # si on est ici, il faut recadrer la vue...
+            self.xmin = self.personnage.left - MARGE_GAUCHE_VUE
+            # ...et positionner le drapeau
+            vue_change = True
+
+        # même chose mais pour l'autre côté, en bas (cas de chute) et en haut (cas de saut)
+        if self.personnage.right + MARGE_DROITE_VUE > self.xmin + LARGEUR_ECRAN:
+            # right + marge == vd et vd == vg + L
+            # vg == right + marge - L
+            self.xmin = MARGE_DROITE_VUE + self.personnage.right - LARGEUR_ECRAN
+            vue_change = True
+        if self.personnage.bottom - MARGE_BASSE_VUE < self.ymin:
+            # bot - marge == vb
+            self.ymin = self.personnage.bottom - MARGE_BASSE_VUE
+            vue_change = True
+        if self.personnage.top + MARGE_HAUTE_VUE > self.ymin + HAUTEUR_ECRAN:
+            self.ymin = self.personnage.top + MARGE_HAUTE_VUE - HAUTEUR_ECRAN
+            vue_change = True
+
+        # le drapeau a été positionné
+        if vue_change:
+            # prudence...
+            self.xmin = int(self.xmin)
+            self.ymin = int(self.ymin)
+
+            # réglage de la vue: xmin, xmax, ymin, ymax
+            arcade.set_viewport(
+                self.xmin,  # xmin
+                LARGEUR_ECRAN + self.xmin,  # xmax
+                self.ymin,  # ymin
+                HAUTEUR_ECRAN + self.ymin  # ymax
+            )
 
 
 def main():

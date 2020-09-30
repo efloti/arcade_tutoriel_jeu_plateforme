@@ -1,73 +1,43 @@
-# 3 - Déplacement et interaction avec le décors
+# 4 - Ajuster la fenêtre de vue au déplacement du personnage
 
-Tag *v0.3*
+Tag *v0.4*
 
-## Déplacement du personnage
+L'objectif est d'«agrandir» notre petit monde. Précisément, nous souhaiterions que la vue du jeu change lorsque le personnage approche des bords.
 
-**Dans** la classe `MonJeu`, On ajoute les fonctions:
-- `on_key_press(self, key, ...)`
-- `on_key_release(self, key, ...)`.
+*Initialement*, la fenêtre de vue \[*viewport*\] est un rectangle défini par quatre nombres:
+- bord gauche: xmin = 0
+- bord bas: ymin = 0
+- bord droit: xmax = `LARGEUR_ECRAN`
+- bord haut: ymax = `HAUTEUR_ECRAN`
 
-Ces fonctions seront appelées *automatiquement* dès que l'utilisateur **enfonce** \[*press*\] ou **relâche** \[*release*\] une touche du clavier.
 
-Par exemple, si l'utilisateur enfonce la flèche ↑ du clavier, alors la variable `key` prendra la valeur ... `arcade.key.UP`.
+Mais arcade propose la méthode `arcade.set_viewport(xmin, ymin, xmax, ymax)` pour recadrer la fenêtre d'affichage.
 
-Si cela se produit, on veut déplacer notre personnage vers le haut: `self.personnage.center_y += <valeur>` **sauf si** ça lui fait traverser le décors!!!
+Ainsi, **pour le côté gauche**, on commence par définir une marge minimum - `MARGE_GAUCHE_VUE` - entre le bord gauche de la vue et le personnage.
 
-## Interaction avec le décors
+Puis, on ajoute l'attribut `self.xmin` à la fenêtre qu'on initialise à `0`.
 
-Comme il n'est pas du tout évident de gérer à la main le «décors» et le «**sauf si**» précédent, on utilise un gestionnaire spécialisé appelé `PhysicsEngineSimple` qui va s'occuper de ces choses pour nous.
+Ensuite, dans `on_update`, on vérifie si le personnage (son bord gauche) entre dans cette marge (trop proche du bord gauche).
 
-Cela se passe en trois temps:
-
-1. créer ce gestionnaire et le placer dans un attribut de la fenêtre courante: 
-
-   `self.physics_engine = arcade.PhysicsEngineSimple(<sprite personnage>, <sprites du decors>)`
-
-2. créer une fonction `on_update(self, delta_time)` dans la classe `MonJeu`: elle sera appelée automatiquement à intervalle régulier
-
-3. appeler, depuis la fonction précédente, la méthode `update` de `physics_engine`.
-
-Voici les portions de code pertinentes:
+Si c'est le cas, on recalcule `self.xmin` et on règle la fenêtre de vue de façon que la distance du personnage au bord gauche de la fenêtre soit précisément `MARGE_GAUCHE_VUE`. Cela donne quelquechose comme:
 
 ```python
-    def __init__(self):
+    def on_update(self, time_delta):
         ...
-        self.physics_engine = None
-        ...
-    def setup(self):
-        ...
-        self.physics_engine = arcade.PhysicsEngineSimple(
-            self.personnage,  # personnage
-            self.plateformes  # obstacles ou sols
-        )
-        ...
-    def on_update(self, delta_time): # nous détaillerons delta_time plus tard
-        ...
-        self.physics_engine.update()
-        ...
+        if self.personnage.left < self.xmin + MARGE_GAUCHE_VUE:
+            # le personnage est trop proche du bord gauche!! On recadre
+            self.xmin = self.personnage.left - MARGE_GAUCHE_VUE
+            # et on règle la vue
+            arcade.set_viewport(
+                self.xmin,
+                self.ymin,
+                self.xmin + LARGEUR_ECRAN # xmax
+                self.ymin + HAUTEUR_ECRAN # ymax
+            )
 ```
 
-## Retour au déplacement du personnage
-
-Grâce au «physics_engine», nous pouvons gérer le clavier sans nous préoccuper des obstacles.
-
-Mais plutôt que de modifier le `.center_y` de notre sprite, nous modifions son `.change_y`. Cela donne:
-
-```python
-    def on_key_press(self, key, modifiers): # ne pas se préoccuper de modifiers...
-        ...
-        if key == arcade.key.UP:
-            self.personnage.change_y = VITESSE_PERSONNAGE # constante à définir en début de fichier
-        if key == arcade.key.DOWN:
-            self.personnage.change_y = -VITESSE_PERSONNAGE
-        ...
-    def on_key_release(self, key, modifiers):
-        if key == arcade.key.UP:
-            self.personnage.change_y = 0    
-        ...
-```
+Reste à faire de même pour les trois autres bords...
 
 ## Suite... 
 
-`git checkout v0.4`
+`git checkout v0.5`
