@@ -1,31 +1,37 @@
-# 6 - Du son et des objets à ramasser
+# 7 - Afficher un score
 
-Tag *v0.6*
+Tag *v0.7*
 
-Pour le son, on charge un fichier son avec `mon_son = arcade.load_sound(chemin_fichier_son)`, puis on déclenche avec `arcade.play_sound(mon_son)` au moment propice (par exemple lors d'un saut).
+On utilise pour cela `arcade.draw_text(texte, x, y, couleur, taille)`.
 
-Pour les pièces, on procède de manière similaire aux tuiles (herbe et obstacles) pour les placer, les dessiner... Remarquez qu'on les groupe dans une `SpriteList` dédiée (ici nommée `self.pieces`).
+On commence par ajouter l'attribut `score` à notre fenêtre: `self.score = 0`.
 
-Reste à gérer dans `on_update` la collision entre le personnage et les pièces avec `arcade.check_for_collision_with_list(un_sprite, des_sprites)` qui renvoie une liste de sprite en collision avec `un_sprite`. 
+On le met à jour dans la partie de `on_update` qui gère les collisions (visible au dessus): `self.score += 1`.
 
-Dans les grandes lignes, cela donne:
+Et on affiche, dans `on_draw`, avec la fonction mentionnée au début (attention que le x et le y se rapporte à la fenêtre de vue...).
+
+Dans les grandes lignes:
 
 ```python
+    ...
     def __init__(...):
         ...
-        self.son_collecte_piece = arcade.load_sound('sounds/coin1.wav')
+        self.score = 0 # à répéter dans le setup
         ...
     ...
-    def on_update(...):
+    def on_draw(...):
         ...
-        # on récupère ... (noter que `pieces` n'a rien a voir avec `self.pieces`)
-        pieces = arcade.check_for_collision_with_list(self.personnage, self.pieces)
-        # ... et on agit
-        for piece in pieces:
-            piece.remove_from_sprite_lists()
-            arcade.play_sound(self.son_collecte_piece)
+        arcade.draw_text(
+            f"Score: {self.score}", # le texte
+            self.xmin + 10, self.ymin + 10, # x, y: en bas à gauche de la vue
+            arcade.csscolor.WHITE, # couleur
+            18 # taille en pts
+        )
+        ...
+    ...
+        
 ```
 
 ## Suite... 
 
-`git checkout v0.7`
+`git checkout v0.8`

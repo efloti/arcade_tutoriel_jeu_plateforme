@@ -5,9 +5,6 @@ import arcade
 # En cas de pb de son (voir notes plus bas)
 # import pyglet
 
-# En cas de pb de son (voir notes plus bas)
-# import pyglet
-
 # Constantes
 LARGEUR_ECRAN = 1000
 HAUTEUR_ECRAN = 650
@@ -137,6 +134,16 @@ class MonJeu(arcade.Window):
         self.plateformes.draw()
         self.pieces.draw()
         self.personnages.draw()
+
+        # affichage du score
+        score_txt = f"Score: {self.score}"
+        arcade.draw_text(
+            score_txt,
+            self.xmin + 10,
+            self.ymin + 10,
+            arcade.csscolor.WHITE,
+            18
+        )
 
     def on_key_press(self, key, modifiers):
         """ Automatiquement appelée lorsque l'utilisateur enfonce une touche
