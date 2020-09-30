@@ -19,9 +19,12 @@ Pour vous faciliter la vie, je traduis une partie du code mais je vous recommand
 
 L'archive *initiation_cartes.zip* contient quelques ressources pour se familiariser avec l'[éditeur de carte Tiled](https://www.mapeditor.org/) - voir plus loin *8 - cartes de jeu*.
 
-Pour suivre le tutoriel, cloner le dépôt et positionnez-vous sur les tags successifs:
+Pour suivre le tutoriel, cloner le dépôt  `git clone ` et positionnez-vous sur les tags successifs:
 
-`git checkout <tag>`.
+    git clone https://github.com/efloti/arcade_tutoriel_jeu_plateforme.git
+    git checkout <tag>
+
+> Voir [cette vidéo](https://vimeo.com/463403868) pour plus d'explications
 
 Voici l'intégralité des étapes. Elles sont aussi disponibles individuellement pour chaque tag dans `EXPLICATION.md` 
 
