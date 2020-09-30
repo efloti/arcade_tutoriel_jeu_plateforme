@@ -19,6 +19,7 @@ ECHELLE_TUILE = 0.5
 VITESSE_PERSONNAGE = 5  # en pixel/frame (rafraîchissement de l'image)
 GRAVITE = .8
 VITESSE_SAUT_PERSONNAGE = 20
+VITESSE_ECHELLE_PERSONNAGE = VITESSE_PERSONNAGE / 2
 DROITE = 0  # va servir d'index «nommé»
 GAUCHE = 1
 
@@ -30,8 +31,9 @@ MARGE_HAUTE_VUE = 100
 
 PERSONNAGE_BASE_IMGS = f":resources:images/animated_characters/female_adventurer/femaleAdventurer_"
 
-# Animation de la marche
+# Animations
 DT_MARCHE = 0.1  # secondes entre deux sprites successifs
+DT_GRIMPE = 2 * DT_MARCHE
 
 
 def charger_paire_texture(nomfich):
@@ -67,10 +69,21 @@ class Personnage(arcade.Sprite):
             for i in range(8)
         ]
 
+        self.grimpe_textures = [
+            arcade.load_texture(
+                f"{PERSONNAGE_BASE_IMGS}climb{i}.png"
+            )
+            for i in range(2)
+        ]
+
         # définition des attributs complémentaires
         self.direction = DROITE
         self.i_marche = 0
         self.dt_marche = DT_MARCHE
+        self.sur_echelle = False
+        self.sur_sol = True
+        self.i_grimpe = 0
+        self.dt_grimpe = DT_GRIMPE
 
         # attribut de sprite à renseigner
         self.texture = self.repos_texture
@@ -88,15 +101,33 @@ class Personnage(arcade.Sprite):
 
         # gestion du temps
         self.dt_marche -= delta_time
+        self.dt_grimpe -= delta_time
         if self.dt_marche <= 0:
             self.dt_marche = DT_MARCHE
+        if self.dt_grimpe <= 0:
+            self.dt_grimpe = DT_GRIMPE
 
-        # Saut ou chute ou marche
-        if self.change_y > 0:         # saut
+        # grimpe
+        if self.sur_echelle and (abs(self.change_y) > 0 or not self.sur_sol):
+            if self.sur_sol:  # début
+                self.dt_grimpe = DT_GRIMPE
+                self.i_grimpe = 0
+                self.texture = self.grimpe_textures[0]
+            elif not self.sur_sol and self.change_y == 0:
+                self.texture = self.grimpe_textures[0]
+            elif self.dt_grimpe == DT_GRIMPE:  # entrain de grimper
+                self.i_grimpe += 1
+                self.i_grimpe %= len(self.grimpe_textures)
+                self.texture = self.grimpe_textures[self.i_grimpe]
+            # fin, autrement on risque d'être en saut ou chute!
+            return
+
+        # Saut, chute ou marche
+        if self.change_y > 0:         # saute
             self.texture = self.saut_textures[self.direction]
         elif self.change_y < 0:       # chute
             self.texture = self.chute_textures[self.direction]
-        elif abs(self.change_x) > 0:  # marche
+        elif abs(self.change_x) > 0:  # marche ou sur échelle
             # début ou continuation?
             if self.texture == self.repos_texture:  # début!
                 self.dt_marche = DT_MARCHE
@@ -261,9 +292,9 @@ class MonJeu(arcade.Window):
                 # si utilisation de pyglet pour le son
                 # self.son_saut.play()
             if self.physics_engine.is_on_ladder():
-                self.personnage.change_y = VITESSE_PERSONNAGE
+                self.personnage.change_y = VITESSE_ECHELLE_PERSONNAGE
         if key == arcade.key.DOWN and self.physics_engine.is_on_ladder():
-            self.personnage.change_y = -VITESSE_PERSONNAGE
+            self.personnage.change_y = -VITESSE_ECHELLE_PERSONNAGE
         if key == arcade.key.LEFT:
             self.personnage.change_x = -VITESSE_PERSONNAGE
         if key == arcade.key.RIGHT:
@@ -290,6 +321,10 @@ class MonJeu(arcade.Window):
 
         # gestion du mouvement du joueur via le `physics_engine`
         self.physics_engine.update()
+
+        # informer le personnage
+        self.personnage.sur_sol = True if self.physics_engine.can_jump() else False
+        self.personnage.sur_echelle = True if self.physics_engine.is_on_ladder() else False
 
         # on «joue» les animations des calques qui en ont:
         self.pieces.update_animation(delta_time)  # drapeaux
