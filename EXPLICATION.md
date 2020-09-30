@@ -1,72 +1,45 @@
-# 8 - Utiliser une carte de jeu (une *tilemap*)
+# 9 - Changer de carte pendant le jeu
 
-Tag *v0.8*
+Tag *v0.9*
 
-Plutôt que de placer chaque Sprite «à la main» comme nous l'avons fait jusqu'ici, on peut utiliser une «*tilemap*».
+Pour illustrer cela nous utiliserons les cartes d'Arcade `map2_level1` et `map2_level2`.
 
-Voilà à quoi cela ressemble dans le logiciel libre [Tiled Map Editor](https://www.mapeditor.org/).
+L'idée est d'ajouter un paramètre `niveau` à la fonction `.setup(self, niveau)` et d'appeler cette fonction lorsque l'utilisateur arrive
+à la «fin» d'une carte dans `.on_update(...)`.
 
-![tilemap_decouverte.png](illustrations/tilemap_decouverte.png)
+Ainsi:
+1. On ajoute l'attribut `niveau` à la fenêtre et le paramètre `niveau` à son `.setup()`,
+2. Dans `.setup`, on charge la carte en fonction du niveau,
+3. On ajoute l'attribut `x_max_carte` à la fenêtre et on le calcule dans `.setup`:
+4. Dans `.on_update`, on compare `self.personnage.center_x` avec `self.x_max_carte` et on agit en conséquence.
 
-On distingue **3 zones**: la **carte** elle-même, le **jeu de tuiles** (*tiles*) qui a servi à la «peindre» et les **calques** (*layers*) qui permettent de distinguer certains groupes de tuiles.
-
-Ici, le calque «**ramasser**» contient les petits objets (pièces, diamands, clés...), l'autre «**plateforme**» contient les éléments de ... plateforme! 
-
-Le logiciel produit un fichier d'extension *.tmx* qu'on peut alors charger avec arcade. Pour cela, on utilise:
-- `carte = arcade.read_tmx(chemin_fichier_tmx)` - [doc](https://arcade.academy/arcade.html#arcade.read_tmx)/[src](https://arcade.academy/_modules/arcade/tilemap.html#read_tmx)
-
-Puis, on charge *chaque calque* dans une `SpriteList` dédiée:
-- `self.tuiles = arcade.process_layer(carte, nom_calque, ...)` - [doc](https://arcade.academy/arcade.html#arcade.process_layer)/[src](https://arcade.academy/_modules/arcade/tilemap.html#process_layer)
-
-Pour voir rapidement ce que cela donne, on peut utiliser une carte des [ressources](https://arcade.academy/resources.html#resources-tmx-maps) fournies par arcade. Le chemin d'accès commence par `":resources:tmx_maps/<nom_fichier>"` où le nom du fichier est (nom fichier suivi de ses calques): `map.tmx`, `map2_level1.tmx`, ... etc.
-
-Cartes possibles et leurs calques (pas dans la doc!):
-
-- `level_1.tmx`: *Platforms*
-- `level_2.tmx`: *Platforms*
-- `map_with_custom_hitboxes.tmx`: *Coins*, *Obstructions*
-- `map_with_external_tileset.tmx`: *Obstructions*
-- `map_with_ladders.tmx`: *Background*, *Coins*, *Ladders*, *Platforms*, *Moving Platforms*
-- `map.tmx`: *Platforms*, *Coins*
-- `map2_level_1.tmx`: *Background*, *Foreground*, *Don't Touch*, *Coins*, *Platforms*
-- `map2_level_2.tmx`: idem
-- `test_map_1.tmx`: *Background*, *Platforms*
-- `test_map_2.tmx`: *Platforms*, *Coins*, *Dirt*
-- `test_map_3.tmx`: *Platforms*, *Moving Platforms*, *Text Layer*
-- `test_map_4.tmx`: *Background*, *Platforms*
-- `test_map_5.tmx`: *Object_layer*, *Tile_layer_1*
-- `test_map_6.tmx`: *Tile_layer_1*
-- `test_map_7.tmx`: semble corrompu...
-- `test_objects.tmx`: *Tiles*, *Group*, *Text*, *Shapes*.
-
-Ainsi, par exemple, et après avoir supprimé le code qui place les sprites «manuellement» (sauf pour le personnage!):
+Dans les grandes lignes, cela donne:
 
 ```python
-    def setup(...):
+    ...
+    def setup(self, niveau):
+        self.niveau = niveau
         ...
-        carte = arcade.read_tmx(":resources:tmx_maps/map.tmx")
-        
-        self.pieces = arcade.process_layer(
-            carte,
-            "Coins",
-            # options               # par défaut   
-            scaling=ECHELLE_TUILES, # 1
-            use_spatial_hash=True   # False
-        )
-        
-        self.plateformes = arcade.process_layer(
-            carte,
-            "Platforms,
-            scaling=ECHELLE_TUILES,
-            use_spatial_hash=True
-        )
+        carte = arcade.read_tmx(f":resources:tmx_maps/map2_level{niveau}.tmx")
+        # carte.map_size.width est le nombre de tuiles en largeur,
+        # carte.tile_size.width est la largeur en px des tuiles (avant mise à l'échelle)
+        self.x_max_carte = carte.map_size.width * (carte.tile_size.width * ECHELLE_TUILE)
         ...
+    ...
+    def on_update(...):
+        ...
+        if self.personnage.right > self.x_max_carte:
+            niveau = 2 if self.niveau == 1 else 1
+            # c'est ici qu'on comprend l'intérêt de distinguer 
+            # `setup` et `__init__`
+            self.setup(niveau)
+            arcade.play_sound(self.son_niveau)
 ```
 
-*Note1*: on peu même supprimer les déclarations `self.plateformes = arcade.SpriteList(...)` car `.process_layer(...)` renvoie ... une `SpriteList`.
+*Note1*: On peut aussi ajouter un son pour marquer qu'on change de niveau.
 
-*Note2*: on expliquera un peu plus tard comment faire ses propres cartes de jeu.
+*Note2*: le score est remis à zéro lorsqu'on change de niveau, pouvez-vous corriger ce bug?
 
 ## Suite... 
 
-`git checkout v0.9`
+`git checkout v0.10`
